@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text Memorizer</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#6366f1" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Text Memorizer" />
+  <link rel="stylesheet" href="vendor/katex.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+  <!-- Navigation -->
+  <nav class="nav-bar">
+    <span class="nav-brand">Text Memorizer</span>
+    <div class="nav-links">
+      <button class="nav-btn" id="nav-library">Library</button>
+      <button class="nav-btn" id="nav-import">Import</button>
+      <button class="nav-btn" id="nav-export">Backup</button>
+    </div>
+  </nav>
+
+  <!-- Screens -->
+  <main class="main-content">
+    <div class="screen screen--active" id="screen-library"></div>
+    <div class="screen" id="screen-editor"></div>
+    <div class="screen" id="screen-review"></div>
+    <div class="screen" id="screen-import"></div>
+    <div class="screen" id="screen-export"></div>
+    <div class="screen" id="screen-settings"></div>
+  </main>
+
+  <!-- Overlays -->
+  <div id="modal-container"></div>
+  <div id="toast-container"></div>
+</div>
+
+<noscript>
+  <p style="padding:2rem;font-family:sans-serif">Text Memorizer requires JavaScript to run.</p>
+</noscript>
+
+<!-- Vendor libraries -->
+<script src="vendor/marked.min.js"></script>
+<script src="vendor/purify.min.js"></script>
+<script src="vendor/katex.min.js"></script>
+<script src="vendor/auto-render.min.js"></script>
+
+<!-- Utils -->
+<script src="src/utils/ids.js"></script>
+<script src="src/utils/time.js"></script>
+<script src="src/utils/hash.js"></script>
+<script src="src/utils/text.js"></script>
+<script src="src/utils/events.js"></script>
+<script src="src/utils/crypto.js"></script>
+
+<!-- DB layer -->
+<script src="src/db/schema.js"></script>
+<script src="src/db/db.js"></script>
+<script src="src/db/repositories.js"></script>
+
+<!-- Cards -->
+<script src="src/cards/tokenizer.js"></script>
+<script src="src/cards/fingerprints.js"></script>
+<script src="src/cards/cards.js"></script>
+
+<!-- Review -->
+<script src="src/review/scheduler.js"></script>
+<script src="src/review/adaptiveBlinding.js"></script>
+<script src="src/review/standardReview.js"></script>
+<script src="src/review/textMemoryReview.js"></script>
+<script src="src/review/reviewController.js"></script>
+
+<!-- Render -->
+<script src="src/render/markdownRenderer.js"></script>
+<script src="src/render/standardRenderer.js"></script>
+<script src="src/render/textMemoryRenderer.js"></script>
+<script src="src/render/progressRenderer.js"></script>
+
+<!-- Import -->
+<script src="src/import/detectImportKind.js"></script>
+<script src="src/import/cards/parseMarkdownDeck.js"></script>
+<script src="src/import/cards/parsePlainTextCard.js"></script>
+<script src="src/import/cards/parseJsonCards.js"></script>
+<script src="src/import/cards/validateImportedCards.js"></script>
+<script src="src/import/cards/saveImportedCards.js"></script>
+<script src="src/import/snapshot/parseSnapshot.js"></script>
+<script src="src/import/snapshot/validateSnapshot.js"></script>
+<script src="src/import/snapshot/previewSnapshot.js"></script>
+<script src="src/import/snapshot/restoreSnapshot.js"></script>
+
+<!-- Export -->
+<script src="src/export/snapshotExport.js"></script>
+<script src="src/export/backupFile.js"></script>
+<script src="src/export/snapshotShare.js"></script>
+
+<!-- State -->
+<script src="src/state.js"></script>
+
+<!-- UI -->
+<script src="src/ui/components.js"></script>
+<script src="src/ui/libraryScreen.js"></script>
+<script src="src/ui/editorScreen.js"></script>
+<script src="src/ui/reviewScreen.js"></script>
+<script src="src/ui/importScreen.js"></script>
+<script src="src/ui/exportScreen.js"></script>
+<script src="src/ui/settingsScreen.js"></script>
+
+<!-- App entry point -->
+<script src="src/app.js"></script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(console.error);
+  }
+</script>
+
+</body>
+</html>
