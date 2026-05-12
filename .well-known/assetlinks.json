@@ -1,1 +1,8 @@
-[]
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.text_memorizer.twa",
+        "sha256_cert_fingerprints": ["6A:EC:B7:5F:8D:2C:A2:3E:06:A6:0F:7D:EC:79:DC:7E:19:FE:4E:CC:F9:CD:04:DB:DE:ED:26:71:DF:C5:E1:32"]
+      }
+    }]
