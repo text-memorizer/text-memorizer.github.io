@@ -70,6 +70,9 @@ async function init() {
   // Fresh installs and same-version reloads skip the modal silently.
   maybeShowChangelogOnBoot();
 
+  // On mobile, surface a one-time hint to add the app to the home screen.
+  maybeShowInstallHint();
+
   // Surface sync-folder availability so the user knows backups will mirror.
   if (folderSyncSupported() && await syncFolderAvailable(db)) {
     const folderName = await getFolderDisplayName(db);

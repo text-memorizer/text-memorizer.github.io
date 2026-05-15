@@ -1,7 +1,3 @@
-# PWABuilder signing key — never commit this
-*.keystore
-*.jks
-
 # OS noise
 .DS_Store
 Thumbs.db
