@@ -43,7 +43,9 @@ function createCard(type, fields = {}) {
     updatedAt: ts,
     deletedAt: null,
     modifiedByDeviceId: getOrCreateDeviceId(),
-    revision: 1
+    revision: 1,
+    reverseOfCardId: fields.reverseOfCardId || null,
+    hasReverseCompanion: fields.hasReverseCompanion === true
   };
 
   if (type === "standard") {

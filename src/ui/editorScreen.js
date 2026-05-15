@@ -77,6 +77,16 @@ async function renderEditorScreen(db, existingCard, deckId) {
   const fieldsContainer = el("div", { id: "editor-fields" });
   form.appendChild(fieldsContainer);
 
+  // Reverse companion option (only for standard cards)
+  const reverseCompanionRow = el("div", { className: "form-row", id: "editor-reverse-companion-row" },
+    el("label", { className: "checkbox-row" },
+      el("input", { type: "checkbox", id: "editor-reverse-companion" }),
+      el("span", {}, "Also create reverse companion")
+    ),
+    el("div", { className: "form-help" }, "Sides will appear in reverse order on the companion.")
+  );
+  form.appendChild(reverseCompanionRow);
+
   // Working copy of side markdowns when editing a standard card. Survives
   // re-renders inside renderStandardFields (e.g., add/remove side).
   let editorSides = null;
@@ -124,6 +134,7 @@ async function renderEditorScreen(db, existingCard, deckId) {
     fieldsContainer.innerHTML = "";
     if (type === "standard") renderStandardFields(existingCard);
     else { editorSides = null; renderTextMemoryFields(existingCard); }
+    reverseCompanionRow.style.display = type === "standard" ? "" : "none";
   }
 
   function renderStandardFields(card) {
@@ -385,6 +396,10 @@ async function saveCard(db, existingCard, collectSides) {
     fields.fingerprint = await fingerprintTextMemory(fields.text);
   }
 
+  const companionCheckbox = document.getElementById("editor-reverse-companion");
+  const wantsCompanion = type === "standard" && companionCheckbox && companionCheckbox.checked;
+
+  let savedCardId;
   if (existingCard) {
     let updated;
     if (type === "standard") {
@@ -402,14 +417,34 @@ async function saveCard(db, existingCard, collectSides) {
         standardCard: existingCard.type === "text-memory" ? existingCard.standardCard : null
       });
     }
+    if (wantsCompanion) updated.hasReverseCompanion = true;
+    savedCardId = updated.id;
     if (cryptoIsUnlocked()) updated = await encryptCardData(updated);
     await repo.putCard(db, updated);
     showToast("Card updated.");
   } else {
     let newCard = createCard(type, fields);
+    if (wantsCompanion) newCard.hasReverseCompanion = true;
+    savedCardId = newCard.id;
     if (cryptoIsUnlocked()) newCard = await encryptCardData(newCard);
     await repo.putCard(db, newCard);
     showToast("Card created.");
+  }
+
+  if (wantsCompanion) {
+    const reversedSides = [...fields.sides].reverse();
+    const reversedFingerprint = await fingerprintStandard(reversedSides);
+    const companionTitle = fields.title ? `${fields.title} (reverse)` : "(reverse)";
+    let companion = createCard("standard", {
+      title: companionTitle,
+      deckId: fields.deckId,
+      tags: fields.tags,
+      sides: reversedSides,
+      fingerprint: reversedFingerprint,
+      reverseOfCardId: savedCardId
+    });
+    if (cryptoIsUnlocked()) companion = await encryptCardData(companion);
+    await repo.putCard(db, companion);
   }
 
   setScreen("library");

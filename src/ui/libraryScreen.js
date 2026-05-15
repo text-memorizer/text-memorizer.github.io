@@ -160,7 +160,11 @@ function cardMatchesFilter(card, filterState) {
 
 function renderCardRow(db, card) {
   const row = el("div", { className: "card-row" });
-  row.appendChild(el("div", { className: "card-row-title" }, card.title || "Untitled"));
+  const hasReverseLink = !!(card.reverseOfCardId || card.hasReverseCompanion);
+  row.appendChild(el("div", { className: "card-row-title" },
+    hasReverseLink ? el("span", { className: "reverse-badge", title: "Reverse companion link" }, "⇄ ") : null,
+    card.title || "Untitled"
+  ));
   row.appendChild(el("div", { className: "card-row-type" }, card.type === "text-memory" ? "Text" : "Standard"));
   row.appendChild(renderDueChip(card));
   row.appendChild(renderMasteryBar(card.cardStats.masteryPercent));
@@ -169,12 +173,48 @@ function renderCardRow(db, card) {
   return row;
 }
 
+async function findLinkedReverseCard(db, card) {
+  if (card.reverseOfCardId) {
+    const linked = await repo.getCard(db, card.reverseOfCardId);
+    return linked && !linked.deletedAt ? linked : null;
+  }
+  if (card.hasReverseCompanion) {
+    const all = await repo.getAllCards(db);
+    return all.find(c => c.reverseOfCardId === card.id && !c.deletedAt) || null;
+  }
+  return null;
+}
+
 async function deleteCardConfirm(db, card) {
-  confirmModal(`Delete "${card.title || "this card"}"? This cannot be undone.`, async () => {
-    const updated = { ...card, deletedAt: now(), updatedAt: now() };
-    await repo.putCard(db, updated);
-    showToast("Card deleted.");
-    renderLibraryScreen(db);
+  const linkedCard = await findLinkedReverseCard(db, card);
+
+  const body = el("div", {});
+  body.appendChild(el("p", {}, `Delete "${card.title || "this card"}"? This cannot be undone.`));
+
+  let linkedCheckbox = null;
+  if (linkedCard) {
+    linkedCheckbox = el("input", { type: "checkbox", id: "delete-linked-reverse" });
+    body.appendChild(el("label", { className: "checkbox-row" },
+      linkedCheckbox,
+      el("span", {}, "Also delete the linked reverse card.")
+    ));
+  }
+
+  showModal({
+    title: "Confirm",
+    body,
+    actions: [
+      { label: "Cancel", action: () => {} },
+      { label: "Confirm", primary: true, action: async () => {
+        const ts = now();
+        await repo.putCard(db, { ...card, deletedAt: ts, updatedAt: ts });
+        if (linkedCard && linkedCheckbox && linkedCheckbox.checked) {
+          await repo.putCard(db, { ...linkedCard, deletedAt: ts, updatedAt: ts });
+        }
+        showToast("Card deleted.");
+        renderLibraryScreen(db);
+      }}
+    ]
   });
 }
 
