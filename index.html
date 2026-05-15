@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Text Memorizer</title>
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <meta name="theme-color" content="#6366f1" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -36,6 +38,7 @@
     <div class="screen" id="screen-export"></div>
     <div class="screen" id="screen-settings"></div>
     <div class="screen" id="screen-stats"></div>
+    <div class="screen" id="screen-help"></div>
   </main>
 
   <!-- Overlays -->
@@ -121,6 +124,12 @@
 <script src="src/ui/settingsScreen.js"></script>
 <script src="src/ui/statsScreen.js"></script>
 <script src="src/ui/changelogModal.js"></script>
+<script src="src/ui/installHint.js"></script>
+
+<!-- Help -->
+<script src="src/help/topics.js"></script>
+<script src="src/ui/helpScreen.js"></script>
+<script src="src/ui/helpButton.js"></script>
 
 <!-- App entry point -->
 <script src="src/app.js"></script>

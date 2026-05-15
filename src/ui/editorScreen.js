@@ -52,13 +52,26 @@ async function renderEditorScreen(db, existingCard, deckId) {
   const form = el("div", { className: "editor-form" });
 
   // Type selector
+  const typeSelectEl = el("select", { className: "form-select", id: "editor-type", onChange: () => updateEditorFields() },
+    el("option", { value: "standard", ...(cardType === "standard" ? { selected: "selected" } : {}) }, "Standard Flashcard"),
+    el("option", { value: "text-memory", ...(cardType === "text-memory" ? { selected: "selected" } : {}) }, "Text Memorization"),
+    el("option", { value: "cloze", ...(cardType === "cloze" ? { selected: "selected" } : {}) }, "Cloze Deletion")
+  );
+  const editorHelpBtn = el("button", {
+    type: "button",
+    className: "btn btn--ghost help-button",
+    title: "Open help for this card type",
+    "aria-label": "Open help for this card type",
+    onClick: () => {
+      const topicByType = { "standard": "card-standard", "text-memory": "card-text-memory", "cloze": "card-cloze" };
+      const topic = topicByType[typeSelectEl.value] || "card-types";
+      setScreen("help");
+      renderHelpScreen(db, { anchor: topic });
+    }
+  }, "?");
   const typeRow = el("div", { className: "form-row" },
     el("label", { className: "form-label" }, "Card Type"),
-    el("select", { className: "form-select", id: "editor-type", onChange: () => updateEditorFields() },
-      el("option", { value: "standard", ...(cardType === "standard" ? { selected: "selected" } : {}) }, "Standard Flashcard"),
-      el("option", { value: "text-memory", ...(cardType === "text-memory" ? { selected: "selected" } : {}) }, "Text Memorization"),
-      el("option", { value: "cloze", ...(cardType === "cloze" ? { selected: "selected" } : {}) }, "Cloze Deletion")
-    )
+    el("div", { className: "form-select-with-help" }, typeSelectEl, editorHelpBtn)
   );
   form.appendChild(typeRow);
 

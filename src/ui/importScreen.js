@@ -4,7 +4,8 @@ async function renderImportScreen(db) {
 
   const header = el("div", { className: "screen-header" },
     el("button", { className: "btn btn--ghost", onClick: () => { setScreen("library"); renderLibraryScreen(db); } }, "← Back"),
-    el("h1", {}, "Import")
+    el("h1", {}, "Import"),
+    helpButton(db, "import")
   );
   screen.appendChild(header);
 

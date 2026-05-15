@@ -13,7 +13,8 @@ async function renderSettingsScreen(db) {
 
   const header = el("div", { className: "screen-header" },
     el("button", { className: "btn btn--ghost", onClick: () => { setScreen("library"); renderLibraryScreen(db); } }, "← Back"),
-    el("h1", {}, "Settings")
+    el("h1", {}, "Settings"),
+    helpButton(db, "settings")
   );
   screen.appendChild(header);
 
@@ -49,7 +50,10 @@ async function renderSettingsScreen(db) {
 
   // Encryption section
   form.appendChild(el("hr", { style: "margin:1.5rem 0;border:none;border-top:1px solid var(--color-border, #e2e8f0)" }));
-  form.appendChild(el("h3", { style: "margin-bottom:0.75rem;font-size:1rem" }, "Encryption"));
+  form.appendChild(el("div", { style: "display:flex;align-items:center;gap:.5rem;margin-bottom:0.75rem" },
+    el("h3", { style: "font-size:1rem" }, "Encryption"),
+    helpButton(db, "encryption")
+  ));
 
   if (!settings.encryptionEnabled) {
     form.appendChild(el("p", { style: "margin-bottom:0.75rem;font-size:0.875rem;color:var(--color-muted, #64748b)" },

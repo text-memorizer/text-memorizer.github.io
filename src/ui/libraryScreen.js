@@ -16,6 +16,7 @@ async function renderLibraryScreen(db) {
       el("button", { className: "btn btn--primary", onClick: () => showNewCardModal(db) }, "+ Card"),
       el("button", { className: "btn", onClick: () => { setScreen("import"); renderImportScreen(db); } }, "Import"),
       el("button", { className: "btn", onClick: () => { setScreen("export"); renderExportScreen(db); } }, "Backup"),
+      el("button", { className: "btn", onClick: () => { setScreen("help"); renderHelpScreen(db); } }, "Help"),
       el("button", { className: "btn", onClick: () => { setScreen("settings"); renderSettingsScreen(db); } }, "Settings")
     )
   );

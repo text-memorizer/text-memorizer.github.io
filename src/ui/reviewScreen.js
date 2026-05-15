@@ -30,7 +30,8 @@ async function renderReviewScreen(db) {
   const header = el("div", { className: "review-header" },
     el("button", { className: "btn btn--ghost btn--sm", onClick: () => endSession(db) }, "End Session"),
     el("div", { className: "review-progress" },
-      `${reviewController.session.record.cardsReviewed.length} reviewed`)
+      `${reviewController.session.record.cardsReviewed.length} reviewed`),
+    helpButton(db, "reviewing")
   );
   screen.appendChild(header);
 

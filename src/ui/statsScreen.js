@@ -4,7 +4,8 @@ function renderStatsScreen(db) {
 
   const header = el("div", { className: "screen-header" },
     el("button", { className: "btn btn--ghost", onClick: () => { setScreen("library"); renderLibraryScreen(db); } }, "← Back"),
-    el("h1", {}, "Stats")
+    el("h1", {}, "Stats"),
+    helpButton(db, "stats")
   );
   screen.appendChild(header);
 

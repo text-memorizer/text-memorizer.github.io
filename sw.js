@@ -1,4 +1,4 @@
-const CACHE_NAME = "flash-v3";
+const CACHE_NAME = "flash-v5";
 
 const FILES_TO_CACHE = [
   ".",
@@ -58,6 +58,10 @@ const FILES_TO_CACHE = [
   "src/ui/settingsScreen.js",
   "src/ui/statsScreen.js",
   "src/ui/changelogModal.js",
+  "src/ui/installHint.js",
+  "src/help/topics.js",
+  "src/ui/helpScreen.js",
+  "src/ui/helpButton.js",
   "src/app.js",
   "icons/icon-192.png",
   "icons/icon-512.png"

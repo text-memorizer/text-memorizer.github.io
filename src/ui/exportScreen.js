@@ -12,7 +12,8 @@ async function renderExportScreen(db) {
 
   const header = el("div", { className: "screen-header" },
     el("button", { className: "btn btn--ghost", onClick: () => { setScreen("library"); renderLibraryScreen(db); } }, "← Back"),
-    el("h1", {}, "Backup & Transfer")
+    el("h1", {}, "Backup & Transfer"),
+    helpButton(db, "backup-and-sync")
   );
   screen.appendChild(header);
 
