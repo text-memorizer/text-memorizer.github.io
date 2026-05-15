@@ -44,7 +44,8 @@ const reviewController = {
       queue: [...queue],
       index: 0,
       failedCards: [],
-      record: sessionRecord
+      record: sessionRecord,
+      currentCardSurfacedAt: Date.now()
     };
 
     return this.session;
@@ -65,6 +66,9 @@ const reviewController = {
     const card = this.currentCard();
     if (!card) return;
 
+    const surfacedAt = this.session.currentCardSurfacedAt || Date.now();
+    const totalTimeMs = Math.max(0, Date.now() - surfacedAt);
+
     const previousInterval = card.cardStats.intervalDays;
     const previousDue = card.cardStats.nextDueAt;
 
@@ -83,7 +87,7 @@ const reviewController = {
       sessionId,
       reviewedAt: now(),
       userRating: rating,
-      interactionStats: { totalTimeMs: 0 },
+      interactionStats: { totalTimeMs },
       result: {
         previousIntervalDays: previousInterval,
         newIntervalDays: card.cardStats.intervalDays,
@@ -107,6 +111,7 @@ const reviewController = {
     await repo.putSession(db, this.session.record);
 
     this.session.index++;
+    this.session.currentCardSurfacedAt = Date.now();
   },
 
   async endSession() {

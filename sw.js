@@ -51,6 +51,7 @@ const FILES_TO_CACHE = [
   "src/ui/importScreen.js",
   "src/ui/exportScreen.js",
   "src/ui/settingsScreen.js",
+  "src/ui/statsScreen.js",
   "src/app.js",
   "icons/icon-192.png",
   "icons/icon-512.png"

@@ -69,6 +69,8 @@ async function init() {
   // Nav bar
   document.getElementById("nav-library").addEventListener("click", () =>
     guardedNav(db, () => { setScreen("library"); renderLibraryScreen(db); }));
+  document.getElementById("nav-stats").addEventListener("click", () =>
+    guardedNav(db, () => { setScreen("stats"); renderStatsScreen(db); }));
   document.getElementById("nav-import").addEventListener("click", () =>
     guardedNav(db, () => { setScreen("import"); renderImportScreen(db); }));
   document.getElementById("nav-export").addEventListener("click", () =>
