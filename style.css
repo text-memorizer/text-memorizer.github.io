@@ -126,6 +126,13 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); colo
 .form-textarea.drop-target { outline: 2px dashed var(--primary); outline-offset: -4px; }
 .md-image { max-width: 100%; height: auto; border-radius: 4px; display: block; margin: .5rem 0; }
 .markdown-body img { max-width: 100%; height: auto; }
+.markdown-body audio { max-width: 100%; margin: .5rem 0; }
+
+.media-btn-row { display: flex; gap: .35rem; flex-wrap: wrap; }
+
+.recorder-body { display: flex; flex-direction: column; align-items: center; gap: .75rem; padding: .5rem 0; }
+.recorder-status { color: var(--text-muted); font-size: .9rem; }
+.recorder-timer { font-family: var(--font-mono); font-size: 2rem; font-weight: 700; color: var(--primary); }
 
 .card-side-label { font-size: .75rem; color: var(--text-muted); margin-bottom: .35rem; text-transform: uppercase; letter-spacing: .05em; }
 

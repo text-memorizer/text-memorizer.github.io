@@ -160,40 +160,6 @@ async function renderEditorScreen(db, existingCard, deckId) {
       renderStandardFields(card);
     }
 
-    function insertAtCursor(textarea, text) {
-      const start = textarea.selectionStart ?? textarea.value.length;
-      const end = textarea.selectionEnd ?? textarea.value.length;
-      textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
-      textarea.selectionStart = textarea.selectionEnd = start + text.length;
-      textarea.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-
-    async function fileToDataUrl(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      });
-    }
-
-    async function handleImageFiles(textarea, files) {
-      for (const f of files) {
-        if (!f.type || !f.type.startsWith("image/")) continue;
-        if (f.size > 5 * 1024 * 1024) {
-          showToast(`Image "${f.name}" exceeds 5 MB and was skipped.`, "error");
-          continue;
-        }
-        try {
-          const dataUrl = await fileToDataUrl(f);
-          const alt = (f.name || "image").replace(/[\[\]]/g, "");
-          insertAtCursor(textarea, `\n\n![${alt}](${dataUrl})\n\n`);
-        } catch {
-          showToast(`Failed to read image "${f.name}".`, "error");
-        }
-      }
-    }
-
     for (let i = 0; i < editorSides.length; i++) {
       const sideIdx = i;
       const sideValue = editorSides[i].markdown || "";
@@ -252,8 +218,27 @@ async function renderEditorScreen(db, existingCard, deckId) {
         isDirty = true;
       });
 
+      const audioInput = el("input", {
+        type: "file", accept: "audio/*",
+        style: "display:none", id: `editor-side-audio-${sideIdx}`
+      });
+      audioInput.addEventListener("change", async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length) {
+          await handleAudioFile(textarea, files[0]);
+          isDirty = true;
+        }
+        e.target.value = "";
+      });
+
       const imageBtn = el("button", { type: "button", className: "btn btn--sm",
         onClick: () => fileInput.click() }, "+ Image");
+      const audioBtn = el("button", { type: "button", className: "btn btn--sm",
+        onClick: () => audioInput.click() }, "+ Audio");
+      const recordBtn = el("button", { type: "button", className: "btn btn--sm",
+        onClick: () => openAudioRecorderModal(textarea, () => { isDirty = true; }) }, "Record");
+
+      const mediaBtnRow = el("div", { className: "media-btn-row" }, imageBtn, audioBtn, recordBtn);
 
       textarea.addEventListener("paste", async (e) => {
         const items = e.clipboardData && e.clipboardData.items;
@@ -297,7 +282,7 @@ async function renderEditorScreen(db, existingCard, deckId) {
 
       const sideBox = el("div", { className: "side-box" },
         labelRow,
-        el("div", { className: "side-editor-row" }, textarea, imageBtn, fileInput),
+        el("div", { className: "side-editor-row" }, textarea, mediaBtnRow, fileInput, audioInput),
         el("div", { className: "form-row" },
           el("label", { className: "form-label form-label--small" }, "Preview"),
           previewEl
@@ -319,10 +304,45 @@ async function renderEditorScreen(db, existingCard, deckId) {
 
   function renderTextMemoryFields(card) {
     const text = card ? card.textMemoryCard.text : "";
+    const textarea = el("textarea", { className: "form-textarea form-textarea--tall", id: "editor-text",
+      placeholder: "Enter the passage to memorize", rows: "8" }, text);
+
+    const imageInput = el("input", {
+      type: "file", accept: "image/*", multiple: "multiple",
+      style: "display:none", id: "editor-text-image"
+    });
+    imageInput.addEventListener("change", async (e) => {
+      await handleImageFiles(textarea, Array.from(e.target.files || []));
+      e.target.value = "";
+      isDirty = true;
+    });
+
+    const audioInput = el("input", {
+      type: "file", accept: "audio/*",
+      style: "display:none", id: "editor-text-audio"
+    });
+    audioInput.addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length) {
+        await handleAudioFile(textarea, files[0]);
+        isDirty = true;
+      }
+      e.target.value = "";
+    });
+
+    const imageBtn = el("button", { type: "button", className: "btn btn--sm",
+      onClick: () => imageInput.click() }, "+ Image");
+    const audioBtn = el("button", { type: "button", className: "btn btn--sm",
+      onClick: () => audioInput.click() }, "+ Audio");
+    const recordBtn = el("button", { type: "button", className: "btn btn--sm",
+      onClick: () => openAudioRecorderModal(textarea, () => { isDirty = true; }) }, "Record");
+
     fieldsContainer.appendChild(el("div", { className: "form-row" },
       el("label", { className: "form-label" }, "Text"),
-      el("textarea", { className: "form-textarea form-textarea--tall", id: "editor-text",
-        placeholder: "Enter the passage to memorize", rows: "8" }, text)
+      textarea,
+      el("div", { className: "media-btn-row" }, imageBtn, audioBtn, recordBtn),
+      imageInput,
+      audioInput
     ));
 
     const tokenPreview = el("div", { className: "token-preview" });
@@ -332,14 +352,14 @@ async function renderEditorScreen(db, existingCard, deckId) {
     ));
 
     function updateTokenPreview() {
-      const txt = document.getElementById("editor-text").value;
+      const txt = textarea.value;
       const tokens = tokenize(txt);
       tokenPreview.innerHTML = "";
       tokenPreview.appendChild(renderTokens(tokens, { phase: "recall" }));
     }
 
     updateTokenPreview();
-    document.getElementById("editor-text").addEventListener("input", updateTokenPreview);
+    textarea.addEventListener("input", updateTokenPreview);
   }
 
   // Save button

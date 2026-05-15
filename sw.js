@@ -15,6 +15,7 @@ const FILES_TO_CACHE = [
   "src/utils/text.js",
   "src/utils/events.js",
   "src/utils/crypto.js",
+  "src/utils/audio.js",
   "src/db/schema.js",
   "src/db/db.js",
   "src/db/repositories.js",
