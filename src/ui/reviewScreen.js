@@ -82,13 +82,16 @@ function renderStandardReview(db, screen, card) {
     cardArea.innerHTML = "";
     controls.innerHTML = "";
 
+    for (let i = 0; i < reviewState.revealedCount; i++) {
+      if (i > 0) cardArea.appendChild(el("div", { className: "card-divider" }));
+      cardArea.appendChild(renderStandardSide(card, i));
+    }
+
     if (reviewState.phase === "hidden") {
-      cardArea.appendChild(renderStandardFront(card));
-      controls.appendChild(el("button", { className: "btn btn--primary btn--lg", onClick: reveal }, "Show Answer (Space)"));
+      const remaining = reviewState.totalSides - reviewState.revealedCount;
+      const label = remaining === 1 ? "Show Next (Space)" : `Show Next — ${remaining} more (Space)`;
+      controls.appendChild(el("button", { className: "btn btn--primary btn--lg", onClick: reveal }, label));
     } else {
-      cardArea.appendChild(renderStandardFront(card));
-      cardArea.appendChild(el("div", { className: "card-divider" }));
-      cardArea.appendChild(renderStandardBack(card));
       renderRatingButtons(controls, async (rating) => {
         await submitStandardRating(db, card, rating);
       });
@@ -96,14 +99,19 @@ function renderStandardReview(db, screen, card) {
   }
 
   function reveal() {
-    reviewState = standardReviewState.reveal(reviewState);
-    render();
+    if (reviewState.phase === "hidden") {
+      reviewState = standardReviewState.reveal(reviewState);
+      render();
+    }
   }
 
   screen.appendChild(cardArea);
   screen.appendChild(controls);
   render();
-  setupStandardKeyboard(reveal, async (rating) => submitStandardRating(db, card, rating));
+  setupStandardKeyboard(reveal, async (rating) => {
+    if (reviewState.phase !== "revealed") return;
+    await submitStandardRating(db, card, rating);
+  });
 }
 
 async function submitStandardRating(db, card, rating) {

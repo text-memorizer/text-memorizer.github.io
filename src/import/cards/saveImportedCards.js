@@ -29,8 +29,15 @@ async function saveImportedCards(db, parsedDecks, validCards) {
     const deckId = deckIdMap[rawCard.deck] || null;
 
     let fp;
+    let sides = null;
     if (rawCard.type === "standard") {
-      fp = await fingerprintStandard(rawCard.frontMarkdown || rawCard.front, rawCard.backMarkdown || rawCard.back);
+      sides = Array.isArray(rawCard.sides) && rawCard.sides.length
+        ? rawCard.sides.map(s => ({ markdown: (s && s.markdown) || "" }))
+        : [
+            { markdown: rawCard.frontMarkdown || rawCard.front || "" },
+            { markdown: rawCard.backMarkdown || rawCard.back || "" }
+          ];
+      fp = await fingerprintStandard(sides);
     } else {
       fp = await fingerprintTextMemory(rawCard.text);
     }
@@ -42,13 +49,16 @@ async function saveImportedCards(db, parsedDecks, validCards) {
       continue;
     }
 
-    const newCard = createCard(rawCard.type, {
-      title: rawCard.title || truncate(rawCard.frontMarkdown || rawCard.text || "", 8),
+    const titleFallback = rawCard.type === "standard"
+      ? ((sides && sides[0] && sides[0].markdown) || "")
+      : (rawCard.text || "");
+
+    let newCard = createCard(rawCard.type, {
+      title: rawCard.title || truncate(titleFallback, 8),
       deckId,
       tags: rawCard.tags || [],
       fingerprint: fp,
-      frontMarkdown: rawCard.frontMarkdown || rawCard.front,
-      backMarkdown: rawCard.backMarkdown || rawCard.back,
+      sides,
       text: rawCard.text
     });
 

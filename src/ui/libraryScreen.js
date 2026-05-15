@@ -36,14 +36,31 @@ async function renderLibraryScreen(db) {
     if (isDue(card.cardStats.nextDueAt)) dueByDeck[card.deckId]++;
   }
 
-  // Filter controls
+  const filterState = { type: "all", search: "", tags: new Set() };
+  const allRenderCards = [];
+  const allTags = Array.from(new Set(cards.flatMap(c => c.tags || []))).sort();
+
   const filterBar = el("div", { className: "filter-bar" });
-  let filterType = "all";
-  const allRenderCards = [];   // collect per-deck render functions
+
+  let searchTimer = null;
+  const searchInput = el("input", {
+    className: "search-input",
+    type: "search",
+    placeholder: "Search cards…",
+    onInput(e) {
+      const value = e.target.value;
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        filterState.search = value.trim().toLowerCase();
+        allRenderCards.forEach(fn => fn());
+      }, 200);
+    }
+  });
+  filterBar.appendChild(searchInput);
 
   const typeFilter = el("select", { className: "filter-select", onChange(e) {
-    filterType = e.target.value;
-    allRenderCards.forEach(fn => fn(filterType));
+    filterState.type = e.target.value;
+    allRenderCards.forEach(fn => fn());
   }},
     el("option", { value: "all" }, "All types"),
     el("option", { value: "standard" }, "Standard"),
@@ -51,6 +68,28 @@ async function renderLibraryScreen(db) {
   );
   filterBar.appendChild(typeFilter);
   screen.appendChild(filterBar);
+
+  if (allTags.length > 0) {
+    const tagBar = el("div", { className: "filter-bar tag-bar" });
+    for (const tag of allTags) {
+      const chip = el("button", {
+        className: "tag-chip",
+        type: "button",
+        onClick: () => {
+          if (filterState.tags.has(tag)) {
+            filterState.tags.delete(tag);
+            chip.classList.remove("tag-chip--active");
+          } else {
+            filterState.tags.add(tag);
+            chip.classList.add("tag-chip--active");
+          }
+          allRenderCards.forEach(fn => fn());
+        }
+      }, tag);
+      tagBar.appendChild(chip);
+    }
+    screen.appendChild(tagBar);
+  }
 
   for (const deck of decks) {
     const deckCards = cards.filter(c => c.deckId === deck.id);
@@ -74,18 +113,49 @@ async function renderLibraryScreen(db) {
     const cardList = el("div", { className: "card-list" });
     deckSection.appendChild(cardList);
 
-    function renderCards(type) {
+    function renderCards() {
       cardList.innerHTML = "";
-      const filtered = type === "all" ? deckCards : deckCards.filter(c => c.type === type);
-      for (const card of filtered) {
-        cardList.appendChild(renderCardRow(db, card));
+      const filtered = deckCards.filter(c => cardMatchesFilter(c, filterState));
+      if (filtered.length === 0) {
+        const message = deckCards.length === 0
+          ? "No cards in this deck yet."
+          : "No cards match the current filters.";
+        cardList.appendChild(el("div", { className: "empty-filter-state" },
+          el("p", {}, message)
+        ));
+      } else {
+        for (const card of filtered) {
+          cardList.appendChild(renderCardRow(db, card));
+        }
       }
     }
     allRenderCards.push(renderCards);
-    renderCards(filterType);
+    renderCards();
 
     screen.appendChild(deckSection);
   }
+}
+
+function cardMatchesFilter(card, filterState) {
+  if (filterState.type !== "all" && card.type !== filterState.type) return false;
+
+  if (filterState.tags.size > 0) {
+    const cardTags = new Set(card.tags || []);
+    for (const t of filterState.tags) {
+      if (!cardTags.has(t)) return false;
+    }
+  }
+
+  if (filterState.search) {
+    const parts = [];
+    if (card.title) parts.push(card.title);
+    const sides = getStandardSides(card);
+    if (sides.length > 0) parts.push(sides.map(s => s.markdown).join("\n"));
+    if (card.textMemoryCard && card.textMemoryCard.text) parts.push(card.textMemoryCard.text);
+    if (!parts.join("\n").toLowerCase().includes(filterState.search)) return false;
+  }
+
+  return true;
 }
 
 function renderCardRow(db, card) {

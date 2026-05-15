@@ -2,6 +2,11 @@ const RECOGNIZED_CARD_FIELDS = new Set([
   "type", "title", "deck", "tags", "front", "back", "text", "notes", "source", "difficulty"
 ]);
 
+function isRecognizedField(name) {
+  if (RECOGNIZED_CARD_FIELDS.has(name)) return true;
+  return /^side\d+$/.test(name);
+}
+
 function parseMarkdownDeck(text) {
   const lines = text.replace(/\r\n/g, "\n").split("\n");
 
@@ -64,8 +69,8 @@ function parseMarkdownDeck(text) {
     // Check for field name at start of line
     const fieldMatch = line.match(/^([A-Za-z][A-Za-z0-9 _-]*):\s*(.*)$/);
     if (fieldMatch) {
-      const fieldName = fieldMatch[1].trim().toLowerCase().replace(/ /g, "");
-      if (RECOGNIZED_CARD_FIELDS.has(fieldName)) {
+      const fieldName = fieldMatch[1].trim().toLowerCase().replace(/[ _-]/g, "");
+      if (isRecognizedField(fieldName)) {
         flushField();
         currentField = fieldName;
         const rest = fieldMatch[2];
@@ -94,7 +99,7 @@ function parseMarkdownDeck(text) {
 
     const base = {
       type,
-      title: raw.title || truncate(raw.front || raw.text || "", 8),
+      title: raw.title || truncate(raw.front || raw.text || raw.side1 || "", 8),
       deck: raw.deck || deckName,
       tags,
       source: raw.source || "",
@@ -104,8 +109,17 @@ function parseMarkdownDeck(text) {
     if (type === "text-memory") {
       base.text = raw.text || "";
     } else {
-      base.frontMarkdown = raw.front || "";
-      base.backMarkdown = raw.back || "";
+      const sideKeys = Object.keys(raw)
+        .filter(k => /^side\d+$/.test(k))
+        .sort((a, b) => parseInt(a.slice(4), 10) - parseInt(b.slice(4), 10));
+      if (sideKeys.length > 0) {
+        base.sides = sideKeys.map(k => ({ markdown: raw[k] || "" }));
+      } else {
+        base.sides = [
+          { markdown: raw.front || "" },
+          { markdown: raw.back || "" }
+        ];
+      }
     }
 
     return base;

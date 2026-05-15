@@ -21,7 +21,8 @@ function detectImportKind(fileName, text) {
     text.includes("Back:") ||
     text.includes("Text:") ||
     text.includes("# Deck:") ||
-    text.includes("Deck:")
+    text.includes("Deck:") ||
+    /(^|\n)\s*Side\s*\d+\s*:/.test(text)
   ) {
     return "markdown-deck";
   }

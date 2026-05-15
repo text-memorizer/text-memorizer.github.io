@@ -77,17 +77,30 @@ async function renderEditorScreen(db, existingCard, deckId) {
   const fieldsContainer = el("div", { id: "editor-fields" });
   form.appendChild(fieldsContainer);
 
+  // Working copy of side markdowns when editing a standard card. Survives
+  // re-renders inside renderStandardFields (e.g., add/remove side).
+  let editorSides = null;
+
+  function collectSideValues() {
+    if (!editorSides) return null;
+    const collected = [];
+    for (let i = 0; i < editorSides.length; i++) {
+      const ta = document.getElementById(`editor-side-${i}`);
+      collected.push({ markdown: ta ? ta.value : (editorSides[i].markdown || "") });
+    }
+    return collected;
+  }
+
   function updateEditorFields(skipCheck = false) {
     const type = document.getElementById("editor-type").value;
 
     if (!skipCheck && type !== currentFieldType) {
-      const frontEl = document.getElementById("editor-front");
-      const backEl  = document.getElementById("editor-back");
       const textEl  = document.getElementById("editor-text");
-      const hasContent =
-        (frontEl && frontEl.value.trim()) ||
-        (backEl  && backEl.value.trim())  ||
-        (textEl  && textEl.value.trim());
+      let hasContent = textEl && textEl.value.trim();
+      if (!hasContent && editorSides) {
+        const vals = collectSideValues() || [];
+        hasContent = vals.some(s => (s.markdown || "").trim());
+      }
 
       if (hasContent) {
         document.getElementById("editor-type").value = currentFieldType;
@@ -97,6 +110,7 @@ async function renderEditorScreen(db, existingCard, deckId) {
             document.getElementById("editor-type").value = type;
             currentFieldType = type;
             isDirty = false;
+            editorSides = null;
             fieldsContainer.innerHTML = "";
             if (type === "standard") renderStandardFields(null);
             else renderTextMemoryFields(null);
@@ -109,49 +123,187 @@ async function renderEditorScreen(db, existingCard, deckId) {
     currentFieldType = type;
     fieldsContainer.innerHTML = "";
     if (type === "standard") renderStandardFields(existingCard);
-    else renderTextMemoryFields(existingCard);
+    else { editorSides = null; renderTextMemoryFields(existingCard); }
   }
 
   function renderStandardFields(card) {
-    const front = card ? card.standardCard.frontMarkdown : "";
-    const back = card ? card.standardCard.backMarkdown : "";
-
-    fieldsContainer.appendChild(el("div", { className: "form-row" },
-      el("label", { className: "form-label" }, "Front"),
-      el("textarea", { className: "form-textarea", id: "editor-front",
-        placeholder: "Markdown and $math$ supported", rows: "4" }, front)
-    ));
-
-    const previewFront = el("div", { className: "md-preview" });
-    fieldsContainer.appendChild(el("div", { className: "form-row" },
-      el("label", { className: "form-label" }, "Front Preview"),
-      previewFront
-    ));
-
-    fieldsContainer.appendChild(el("div", { className: "form-row" },
-      el("label", { className: "form-label" }, "Back"),
-      el("textarea", { className: "form-textarea", id: "editor-back",
-        placeholder: "Markdown and $math$ supported", rows: "4" }, back)
-    ));
-
-    const previewBack = el("div", { className: "md-preview" });
-    fieldsContainer.appendChild(el("div", { className: "form-row" },
-      el("label", { className: "form-label" }, "Back Preview"),
-      previewBack
-    ));
-
-    function updatePreview() {
-      const fv = document.getElementById("editor-front").value;
-      const bv = document.getElementById("editor-back").value;
-      previewFront.innerHTML = "";
-      previewFront.appendChild(renderMarkdown(fv));
-      previewBack.innerHTML = "";
-      previewBack.appendChild(renderMarkdown(bv));
+    if (!editorSides) {
+      if (card) {
+        const existing = getStandardSides(card);
+        editorSides = existing.length ? existing : [{ markdown: "" }, { markdown: "" }];
+      } else {
+        editorSides = [{ markdown: "" }, { markdown: "" }];
+      }
     }
 
-    updatePreview();
-    document.getElementById("editor-front").addEventListener("input", updatePreview);
-    document.getElementById("editor-back").addEventListener("input", updatePreview);
+    const sidesWrap = el("div", { className: "sides-wrap" });
+    fieldsContainer.appendChild(sidesWrap);
+
+    function snapshotIntoState() {
+      const vals = collectSideValues();
+      if (vals) editorSides = vals;
+    }
+
+    function rerender() {
+      fieldsContainer.innerHTML = "";
+      renderStandardFields(card);
+    }
+
+    function insertAtCursor(textarea, text) {
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? textarea.value.length;
+      textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+      textarea.selectionStart = textarea.selectionEnd = start + text.length;
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    async function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleImageFiles(textarea, files) {
+      for (const f of files) {
+        if (!f.type || !f.type.startsWith("image/")) continue;
+        if (f.size > 5 * 1024 * 1024) {
+          showToast(`Image "${f.name}" exceeds 5 MB and was skipped.`, "error");
+          continue;
+        }
+        try {
+          const dataUrl = await fileToDataUrl(f);
+          const alt = (f.name || "image").replace(/[\[\]]/g, "");
+          insertAtCursor(textarea, `\n\n![${alt}](${dataUrl})\n\n`);
+        } catch {
+          showToast(`Failed to read image "${f.name}".`, "error");
+        }
+      }
+    }
+
+    for (let i = 0; i < editorSides.length; i++) {
+      const sideIdx = i;
+      const sideValue = editorSides[i].markdown || "";
+
+      const labelRow = el("div", { className: "side-label-row" },
+        el("label", { className: "form-label" }, `Side ${sideIdx + 1}`),
+        el("div", { className: "side-actions" },
+          el("button", { type: "button", className: "btn btn--sm",
+            onClick: () => {
+              snapshotIntoState();
+              if (sideIdx > 0) {
+                [editorSides[sideIdx - 1], editorSides[sideIdx]] = [editorSides[sideIdx], editorSides[sideIdx - 1]];
+                isDirty = true;
+                rerender();
+              }
+            }
+          }, "↑"),
+          el("button", { type: "button", className: "btn btn--sm",
+            onClick: () => {
+              snapshotIntoState();
+              if (sideIdx < editorSides.length - 1) {
+                [editorSides[sideIdx + 1], editorSides[sideIdx]] = [editorSides[sideIdx], editorSides[sideIdx + 1]];
+                isDirty = true;
+                rerender();
+              }
+            }
+          }, "↓"),
+          el("button", { type: "button", className: "btn btn--sm btn--danger-ghost",
+            onClick: () => {
+              if (editorSides.length <= 1) {
+                showToast("A card must have at least one side.", "error");
+                return;
+              }
+              snapshotIntoState();
+              editorSides.splice(sideIdx, 1);
+              isDirty = true;
+              rerender();
+            }
+          }, "Remove")
+        )
+      );
+
+      const textarea = el("textarea", {
+        className: "form-textarea", id: `editor-side-${sideIdx}`,
+        placeholder: "Markdown and $math$ supported. Paste or drop images to insert as base64.",
+        rows: "4"
+      }, sideValue);
+
+      const fileInput = el("input", {
+        type: "file", accept: "image/*", multiple: "multiple",
+        style: "display:none", id: `editor-side-file-${sideIdx}`
+      });
+      fileInput.addEventListener("change", async (e) => {
+        await handleImageFiles(textarea, Array.from(e.target.files || []));
+        e.target.value = "";
+        isDirty = true;
+      });
+
+      const imageBtn = el("button", { type: "button", className: "btn btn--sm",
+        onClick: () => fileInput.click() }, "+ Image");
+
+      textarea.addEventListener("paste", async (e) => {
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+        const files = [];
+        for (const item of items) {
+          if (item.kind === "file" && item.type.startsWith("image/")) {
+            const f = item.getAsFile();
+            if (f) files.push(f);
+          }
+        }
+        if (files.length) {
+          e.preventDefault();
+          await handleImageFiles(textarea, files);
+          isDirty = true;
+        }
+      });
+
+      textarea.addEventListener("dragover", (e) => { e.preventDefault(); textarea.classList.add("drop-target"); });
+      textarea.addEventListener("dragleave", () => textarea.classList.remove("drop-target"));
+      textarea.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        textarea.classList.remove("drop-target");
+        const files = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith("image/"));
+        if (files.length) {
+          await handleImageFiles(textarea, files);
+          isDirty = true;
+        }
+      });
+
+      const previewEl = el("div", { className: "md-preview" });
+      function updatePreview() {
+        previewEl.innerHTML = "";
+        previewEl.appendChild(renderMarkdown(textarea.value));
+      }
+      textarea.addEventListener("input", () => {
+        editorSides[sideIdx].markdown = textarea.value;
+        updatePreview();
+      });
+      updatePreview();
+
+      const sideBox = el("div", { className: "side-box" },
+        labelRow,
+        el("div", { className: "side-editor-row" }, textarea, imageBtn, fileInput),
+        el("div", { className: "form-row" },
+          el("label", { className: "form-label form-label--small" }, "Preview"),
+          previewEl
+        )
+      );
+      sidesWrap.appendChild(sideBox);
+    }
+
+    const addBtn = el("button", { type: "button", className: "btn",
+      onClick: () => {
+        snapshotIntoState();
+        editorSides.push({ markdown: "" });
+        isDirty = true;
+        rerender();
+      }
+    }, "+ Add Side");
+    fieldsContainer.appendChild(addBtn);
   }
 
   function renderTextMemoryFields(card) {
@@ -180,7 +332,8 @@ async function renderEditorScreen(db, existingCard, deckId) {
   }
 
   // Save button
-  const saveBtn = el("button", { className: "btn btn--primary btn--lg", onClick: () => saveCard(db, existingCard) }, "Save Card");
+  const saveBtn = el("button", { className: "btn btn--primary btn--lg",
+    onClick: () => saveCard(db, existingCard, collectSideValues) }, "Save Card");
   form.appendChild(saveBtn);
 
   // Must be in DOM before updateEditorFields — it uses getElementById internally
@@ -193,7 +346,7 @@ async function renderEditorScreen(db, existingCard, deckId) {
   form.addEventListener("change", () => { isDirty = true; });
 }
 
-async function saveCard(db, existingCard) {
+async function saveCard(db, existingCard, collectSides) {
   const type = document.getElementById("editor-type").value;
   const title = document.getElementById("editor-title").value.trim();
   const tagsRaw = document.getElementById("editor-tags").value;
@@ -212,9 +365,14 @@ async function saveCard(db, existingCard) {
   let fields = { title, deckId, tags };
 
   if (type === "standard") {
-    fields.frontMarkdown = document.getElementById("editor-front").value;
-    fields.backMarkdown = document.getElementById("editor-back").value;
-    fields.fingerprint = await fingerprintStandard(fields.frontMarkdown, fields.backMarkdown);
+    const sides = (collectSides && collectSides()) || [];
+    const filtered = sides.filter(s => (s.markdown || "").trim().length > 0);
+    if (filtered.length < 2) {
+      showToast("Standard cards need at least 2 non-empty sides.", "error");
+      return;
+    }
+    fields.sides = sides.map(s => ({ markdown: s.markdown || "" }));
+    fields.fingerprint = await fingerprintStandard(fields.sides);
   } else {
     fields.text = document.getElementById("editor-text").value;
     if (existingCard && existingCard.textMemoryCard) {
@@ -232,12 +390,16 @@ async function saveCard(db, existingCard) {
     if (type === "standard") {
       updated = updateCard(existingCard, {
         title: fields.title, deckId: fields.deckId, tags: fields.tags, fingerprint: fields.fingerprint,
-        standardCard: { frontMarkdown: fields.frontMarkdown, backMarkdown: fields.backMarkdown }
+        type: "standard",
+        standardCard: { sides: fields.sides },
+        textMemoryCard: existingCard.type === "standard" ? existingCard.textMemoryCard : null
       });
     } else {
       updated = updateCard(existingCard, {
         title: fields.title, deckId: fields.deckId, tags: fields.tags, fingerprint: fields.fingerprint,
-        textMemoryCard: { text: fields.text, preserveLineBreaks: true, tokens: fields.tokens }
+        type: "text-memory",
+        textMemoryCard: { text: fields.text, preserveLineBreaks: true, tokens: fields.tokens },
+        standardCard: existingCard.type === "text-memory" ? existingCard.standardCard : null
       });
     }
     if (cryptoIsUnlocked()) updated = await encryptCardData(updated);

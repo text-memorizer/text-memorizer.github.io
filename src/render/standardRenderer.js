@@ -1,13 +1,22 @@
-function renderStandardFront(card) {
+function renderStandardSide(card, index) {
+  const sides = getStandardSides(card);
+  const total = sides.length;
+  const side = sides[index] || { markdown: "" };
   const wrap = document.createElement("div");
-  wrap.className = "card-face card-front";
-  wrap.appendChild(renderMarkdown(card.standardCard.frontMarkdown));
+  wrap.className = "card-face card-side";
+  const label = document.createElement("div");
+  label.className = "card-side-label";
+  label.textContent = `Side ${index + 1} of ${total}`;
+  wrap.appendChild(label);
+  wrap.appendChild(renderMarkdown(side.markdown));
   return wrap;
 }
 
+function renderStandardFront(card) {
+  return renderStandardSide(card, 0);
+}
+
 function renderStandardBack(card) {
-  const wrap = document.createElement("div");
-  wrap.className = "card-face card-back";
-  wrap.appendChild(renderMarkdown(card.standardCard.backMarkdown));
-  return wrap;
+  const sides = getStandardSides(card);
+  return renderStandardSide(card, sides.length - 1);
 }

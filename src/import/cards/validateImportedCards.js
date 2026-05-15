@@ -12,12 +12,17 @@ function validateImportedCards(cards) {
     }
 
     if (card.type === "standard") {
-      if (!card.frontMarkdown && !card.front) {
-        errors.push({ index: i, card, message: `${label}: standard card missing Front` });
-        continue;
+      let sides = Array.isArray(card.sides) ? card.sides : null;
+      if (!sides && (card.frontMarkdown || card.front || card.backMarkdown || card.back)) {
+        sides = [
+          { markdown: card.frontMarkdown || card.front || "" },
+          { markdown: card.backMarkdown || card.back || "" }
+        ];
+        card.sides = sides;
       }
-      if (!card.backMarkdown && !card.back) {
-        errors.push({ index: i, card, message: `${label}: standard card missing Back` });
+      const nonEmpty = (sides || []).filter(s => ((s && s.markdown) || "").trim().length > 0);
+      if (nonEmpty.length < 2) {
+        errors.push({ index: i, card, message: `${label}: standard card needs at least 2 non-empty sides` });
         continue;
       }
     }

@@ -84,8 +84,7 @@ async function encryptCardData(card) {
   if (card.type === "standard" && card.standardCard) {
     result.standardCard = await encryptCardPayload({
       title: card.title, tags: card.tags,
-      frontMarkdown: card.standardCard.frontMarkdown,
-      backMarkdown: card.standardCard.backMarkdown
+      sides: getStandardSides(card)
     });
   } else if (card.type === "text-memory" && card.textMemoryCard) {
     result.textMemoryCard = await encryptCardPayload({
@@ -105,7 +104,16 @@ async function decryptCardData(card) {
     if (!dec) return null;
     result.title = dec.title !== undefined ? dec.title : card.title;
     result.tags = dec.tags !== undefined ? dec.tags : card.tags;
-    result.standardCard = { frontMarkdown: dec.frontMarkdown, backMarkdown: dec.backMarkdown };
+    let sides;
+    if (Array.isArray(dec.sides) && dec.sides.length > 0) {
+      sides = dec.sides.map(s => ({ markdown: (s && s.markdown) || "" }));
+    } else {
+      sides = [
+        { markdown: dec.frontMarkdown || "" },
+        { markdown: dec.backMarkdown || "" }
+      ];
+    }
+    result.standardCard = { sides };
   }
   if (card.textMemoryCard && card.textMemoryCard.encrypted) {
     const dec = await decryptCardPayload(card.textMemoryCard);

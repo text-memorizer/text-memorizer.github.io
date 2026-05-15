@@ -17,8 +17,16 @@ function parseJsonCards(text) {
     if (type === "text-memory") {
       base.text = c.text || "";
     } else {
-      base.frontMarkdown = c.frontMarkdown || c.front || "";
-      base.backMarkdown = c.backMarkdown || c.back || "";
+      if (Array.isArray(c.sides) && c.sides.length > 0) {
+        base.sides = c.sides.map(s => ({
+          markdown: typeof s === "string" ? s : ((s && (s.markdown || s.text)) || "")
+        }));
+      } else {
+        base.sides = [
+          { markdown: c.frontMarkdown || c.front || "" },
+          { markdown: c.backMarkdown || c.back || "" }
+        ];
+      }
     }
     return base;
   });

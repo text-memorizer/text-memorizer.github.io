@@ -47,10 +47,17 @@ function createCard(type, fields = {}) {
   };
 
   if (type === "standard") {
-    card.standardCard = {
-      frontMarkdown: fields.frontMarkdown || "",
-      backMarkdown: fields.backMarkdown || ""
-    };
+    let sides;
+    if (Array.isArray(fields.sides) && fields.sides.length >= 1) {
+      sides = fields.sides.map(s => ({ markdown: (s && s.markdown) || "" }));
+    } else {
+      sides = [
+        { markdown: fields.frontMarkdown || "" },
+        { markdown: fields.backMarkdown || "" }
+      ];
+    }
+    if (sides.length < 2) sides.push({ markdown: "" });
+    card.standardCard = { sides };
   }
 
   if (type === "text-memory") {
@@ -68,6 +75,18 @@ function updateCard(card, fields) {
   const updated = { ...card, ...fields, updatedAt: now(), revision: (card.revision || 1) + 1 };
   updated.modifiedByDeviceId = getOrCreateDeviceId();
   return updated;
+}
+
+function getStandardSides(card) {
+  const sc = card && card.standardCard;
+  if (!sc) return [];
+  if (Array.isArray(sc.sides) && sc.sides.length > 0) {
+    return sc.sides.map(s => ({ markdown: (s && s.markdown) || "" }));
+  }
+  return [
+    { markdown: sc.frontMarkdown || "" },
+    { markdown: sc.backMarkdown || "" }
+  ];
 }
 
 function getOrCreateDeviceId() {
