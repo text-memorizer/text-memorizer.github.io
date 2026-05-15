@@ -66,6 +66,16 @@ async function init() {
   setScreen("library");
   renderLibraryScreen(db);
 
+  // Show "what's new" modal if the user is upgrading from a previous version.
+  // Fresh installs and same-version reloads skip the modal silently.
+  maybeShowChangelogOnBoot();
+
+  // Surface sync-folder availability so the user knows backups will mirror.
+  if (folderSyncSupported() && await syncFolderAvailable(db)) {
+    const folderName = await getFolderDisplayName(db);
+    if (folderName) showToast(`Sync folder ready: ${folderName}`, "info");
+  }
+
   // Nav bar
   document.getElementById("nav-library").addEventListener("click", () =>
     guardedNav(db, () => { setScreen("library"); renderLibraryScreen(db); }));

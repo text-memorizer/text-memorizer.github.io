@@ -1,4 +1,4 @@
-const CACHE_NAME = "flash-v2";
+const CACHE_NAME = "flash-v3";
 
 const FILES_TO_CACHE = [
   ".",
@@ -19,6 +19,7 @@ const FILES_TO_CACHE = [
   "src/db/schema.js",
   "src/db/db.js",
   "src/db/repositories.js",
+  "src/utils/folderSync.js",
   "src/cards/tokenizer.js",
   "src/cards/clozeParser.js",
   "src/cards/fingerprints.js",
@@ -56,6 +57,7 @@ const FILES_TO_CACHE = [
   "src/ui/exportScreen.js",
   "src/ui/settingsScreen.js",
   "src/ui/statsScreen.js",
+  "src/ui/changelogModal.js",
   "src/app.js",
   "icons/icon-192.png",
   "icons/icon-512.png"

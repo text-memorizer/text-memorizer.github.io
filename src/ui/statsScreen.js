@@ -8,18 +8,28 @@ function renderStatsScreen(db) {
   );
   screen.appendChild(header);
 
+  const filterBar = el("div", { className: "stats-filter-bar" });
+  screen.appendChild(filterBar);
+
   const body = el("div", { className: "stats-grid" });
   body.appendChild(el("p", { className: "stats-loading" }, "Loading…"));
   screen.appendChild(body);
 
-  loadStats(db, body).catch(err => {
+  loadStats(db, filterBar, body).catch(err => {
     console.error("Stats load failed:", err);
     body.innerHTML = "";
     body.appendChild(el("p", { className: "empty-state" }, "Failed to load stats: " + err.message));
   });
 }
 
-async function loadStats(db, body) {
+const _STATS_TYPE_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "standard", label: "Standard" },
+  { value: "text-memory", label: "Text" },
+  { value: "cloze", label: "Cloze" }
+];
+
+async function loadStats(db, filterBar, body) {
   const [reviews, sessions, cards] = await Promise.all([
     repo.getAllReviews(db),
     repo.getAllSessions(db),
@@ -27,38 +37,83 @@ async function loadStats(db, body) {
   ]);
   const liveCards = cards.filter(c => !c.deletedAt);
 
-  body.innerHTML = "";
+  let filterType = "all";
 
-  const streak = computeStatsStreak(reviews);
-  const totalMs = reviews.reduce((sum, r) => sum + (r.interactionStats?.totalTimeMs || 0), 0);
-
-  body.appendChild(el("div", { className: "stats-kpis" },
-    statsKpi("Current streak", streak === 0 ? "0 days" : `${streak} day${streak === 1 ? "" : "s"}`),
-    statsKpi("Total reviews", String(reviews.length)),
-    statsKpi("Total review time", formatStatsDuration(totalMs)),
-    statsKpi("Sessions", String(sessions.length))
-  ));
-
-  body.appendChild(statsPanel("Reviews — last 30 days",
-    statsBarChart(reviewsPerDay(reviews))
-  ));
-
-  body.appendChild(statsPanel("Mastery distribution",
-    statsBarChart(masteryBuckets(liveCards), { showLabels: true })
-  ));
-
-  body.appendChild(statsPanel("Due in the next 7 days",
-    statsBarChart(dueSoonBuckets(liveCards), { showLabels: true })
-  ));
-
-  body.appendChild(statsPanel("Ratings — last 30 days",
-    statsBarChart(ratingBuckets(reviews), { showLabels: true })
-  ));
-
-  if (!reviews.length) {
-    body.appendChild(el("p", { className: "empty-state" },
-      "No reviews yet. Stats will appear once you review some cards."));
+  filterBar.innerHTML = "";
+  const segmented = el("div", { className: "stats-segmented" });
+  function renderSegmented() {
+    segmented.innerHTML = "";
+    for (const opt of _STATS_TYPE_OPTIONS) {
+      const btn = el("button", {
+        type: "button",
+        className: "stats-segmented-btn" + (filterType === opt.value ? " stats-segmented-btn--active" : ""),
+        onClick: () => {
+          if (filterType === opt.value) return;
+          filterType = opt.value;
+          renderSegmented();
+          renderBody();
+        }
+      }, opt.label);
+      segmented.appendChild(btn);
+    }
   }
+  renderSegmented();
+  filterBar.appendChild(segmented);
+
+  function renderBody() {
+    const filteredReviews = filterType === "all" ? reviews : reviews.filter(r => r.cardType === filterType);
+    const filteredCards = filterType === "all" ? liveCards : liveCards.filter(c => c.type === filterType);
+    const filteredSessions = sessions;
+
+    body.innerHTML = "";
+
+    if (filterType !== "all" && !filteredReviews.length && !filteredCards.length) {
+      body.appendChild(el("p", { className: "empty-state" },
+        "No reviews of this card type yet."));
+      return;
+    }
+
+    const streak = computeStatsStreak(filteredReviews);
+    const totalMs = filteredReviews.reduce((sum, r) => sum + (r.interactionStats?.totalTimeMs || 0), 0);
+
+    const activeTypeLabel = filterType === "all"
+      ? null
+      : (_STATS_TYPE_OPTIONS.find(o => o.value === filterType) || {}).label;
+
+    const kpis = el("div", { className: "stats-kpis" },
+      statsKpi("Current streak", streak === 0 ? "0 days" : `${streak} day${streak === 1 ? "" : "s"}`),
+      statsKpi("Total reviews", String(filteredReviews.length)),
+      statsKpi("Total review time", formatStatsDuration(totalMs)),
+      statsKpi(activeTypeLabel ? "Active type" : "Sessions",
+        activeTypeLabel || String(filteredSessions.length))
+    );
+    body.appendChild(kpis);
+
+    body.appendChild(statsPanel("Reviews — last 30 days",
+      statsBarChart(reviewsPerDay(filteredReviews))
+    ));
+
+    body.appendChild(statsPanel("Mastery distribution",
+      statsBarChart(masteryBuckets(filteredCards), { showLabels: true })
+    ));
+
+    body.appendChild(statsPanel("Due in the next 7 days",
+      statsBarChart(dueSoonBuckets(filteredCards), { showLabels: true })
+    ));
+
+    body.appendChild(statsPanel("Ratings — last 30 days",
+      statsBarChart(ratingBuckets(filteredReviews), { showLabels: true })
+    ));
+
+    if (!filteredReviews.length) {
+      const msg = filterType === "all"
+        ? "No reviews yet. Stats will appear once you review some cards."
+        : "No reviews of this card type yet.";
+      body.appendChild(el("p", { className: "empty-state" }, msg));
+    }
+  }
+
+  renderBody();
 }
 
 function statsKpi(label, value) {

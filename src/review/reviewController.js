@@ -33,9 +33,12 @@ const reviewController = {
 
     // Expand cloze cards into one virtual entry per group that is due (or new).
     // Non-cloze entries are wrapped uniformly as { card } so the queue is
-    // homogeneous internally.
+    // homogeneous internally. New cloze groups respect the session-wide
+    // maxNewCards cap so a multi-group cloze can't silently flood the queue.
     const queue = [];
     const nowMs = Date.now();
+    const maxNew = sessionSettings.maxNewCards;
+    let newCount = 0;
     for (const card of cardQueue) {
       if (card.type === "cloze" && card.clozeCard && card.clozeCard.groupStats) {
         const keys = Object.keys(card.clozeCard.groupStats);
@@ -44,7 +47,11 @@ const reviewController = {
           const dueTime = stats && stats.nextDueAt ? new Date(stats.nextDueAt).getTime() : 0;
           const isNew = !stats || stats.totalReviews === 0;
           const isFailedRecently = stats && stats.failedRecently;
-          if (dueTime <= nowMs || isNew || isFailedRecently) {
+          if (isNew) {
+            if (newCount >= maxNew) continue;
+            newCount++;
+            queue.push({ card, clozeGroup: key });
+          } else if (dueTime <= nowMs || isFailedRecently) {
             queue.push({ card, clozeGroup: key });
           }
         }

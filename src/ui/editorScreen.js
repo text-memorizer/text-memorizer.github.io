@@ -14,6 +14,25 @@ async function renderEditorScreen(db, existingCard, deckId) {
   let isDirty = false;
   let currentFieldType = cardType;
 
+  // Pre-fetch the linked reverse companion (if any) so the editor can surface
+  // the existing link rather than letting the user accidentally create a
+  // duplicate by re-saving with the checkbox unchecked or freshly checked.
+  let linkedReverse = null;
+  let linkedReverseTitle = "";
+  if (existingCard) {
+    linkedReverse = await findLinkedReverseCard(db, existingCard);
+    if (linkedReverse) {
+      let decLinked = linkedReverse;
+      if (cryptoIsUnlocked() &&
+          (linkedReverse.standardCard?.encrypted || linkedReverse.textMemoryCard?.encrypted || linkedReverse.clozeCard?.encrypted)) {
+        decLinked = await decryptCardData(linkedReverse);
+      }
+      linkedReverseTitle = (decLinked && decLinked.title) || "Untitled";
+    }
+  }
+  const hasExistingCompanion = !!(existingCard && existingCard.hasReverseCompanion && linkedReverse);
+  const isReverseCompanion = !!(existingCard && existingCard.reverseOfCardId);
+
   function navigateBack() {
     if (isDirty) {
       confirmModal("Discard unsaved changes?", () => {
@@ -79,12 +98,26 @@ async function renderEditorScreen(db, existingCard, deckId) {
   form.appendChild(fieldsContainer);
 
   // Reverse companion option (only for standard cards)
+  const reverseCheckboxAttrs = { type: "checkbox", id: "editor-reverse-companion" };
+  if (hasExistingCompanion || isReverseCompanion) {
+    reverseCheckboxAttrs.checked = true;
+    reverseCheckboxAttrs.disabled = true;
+  }
+  let reverseHintText;
+  if (isReverseCompanion) {
+    const sourceTitle = linkedReverseTitle || "the original card";
+    reverseHintText = `This is the reverse of "${sourceTitle}". Edit the original separately to update it.`;
+  } else if (hasExistingCompanion) {
+    reverseHintText = "Linked reverse companion exists. Edit the companion separately to update it.";
+  } else {
+    reverseHintText = "Sides will appear in reverse order on the companion.";
+  }
   const reverseCompanionRow = el("div", { className: "form-row", id: "editor-reverse-companion-row" },
     el("label", { className: "checkbox-row" },
-      el("input", { type: "checkbox", id: "editor-reverse-companion" }),
+      el("input", reverseCheckboxAttrs),
       el("span", {}, "Also create reverse companion")
     ),
-    el("div", { className: "form-help" }, "Sides will appear in reverse order on the companion.")
+    el("div", { className: "form-help" }, reverseHintText)
   );
   form.appendChild(reverseCompanionRow);
 
@@ -508,7 +541,12 @@ async function saveCard(db, existingCard, collectSides) {
   }
 
   const companionCheckbox = document.getElementById("editor-reverse-companion");
-  const wantsCompanion = type === "standard" && companionCheckbox && companionCheckbox.checked;
+  // Skip companion creation when the checkbox is disabled (the link already
+  // exists in one direction). Only honor the checkbox for first-time creation.
+  const wantsCompanion = type === "standard"
+    && companionCheckbox
+    && companionCheckbox.checked
+    && !companionCheckbox.disabled;
 
   let savedCardId;
   if (existingCard) {

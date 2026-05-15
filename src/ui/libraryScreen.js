@@ -184,18 +184,6 @@ function renderCardRow(db, card) {
   return row;
 }
 
-async function findLinkedReverseCard(db, card) {
-  if (card.reverseOfCardId) {
-    const linked = await repo.getCard(db, card.reverseOfCardId);
-    return linked && !linked.deletedAt ? linked : null;
-  }
-  if (card.hasReverseCompanion) {
-    const all = await repo.getAllCards(db);
-    return all.find(c => c.reverseOfCardId === card.id && !c.deletedAt) || null;
-  }
-  return null;
-}
-
 async function deleteCardConfirm(db, card) {
   const linkedCard = await findLinkedReverseCard(db, card);
 

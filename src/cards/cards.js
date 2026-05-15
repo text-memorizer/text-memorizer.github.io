@@ -125,8 +125,8 @@ function refreshClozeAggregate(card) {
     failedReviews,
     lastSeenAt,
     nextDueAt: earliestDue === Infinity ? new Date().toISOString() : new Date(earliestDue).toISOString(),
-    intervalDays: 0,
-    ease: 2.5,
+    intervalDays: null,
+    ease: null,
     masteryPercent: masterySum / keys.length,
     failedRecently
   };
@@ -148,6 +148,18 @@ function getStandardSides(card) {
     { markdown: sc.frontMarkdown || "" },
     { markdown: sc.backMarkdown || "" }
   ];
+}
+
+async function findLinkedReverseCard(db, card) {
+  if (card.reverseOfCardId) {
+    const linked = await repo.getCard(db, card.reverseOfCardId);
+    return linked && !linked.deletedAt ? linked : null;
+  }
+  if (card.hasReverseCompanion) {
+    const all = await repo.getAllCards(db);
+    return all.find(c => c.reverseOfCardId === card.id && !c.deletedAt) || null;
+  }
+  return null;
 }
 
 function getOrCreateDeviceId() {

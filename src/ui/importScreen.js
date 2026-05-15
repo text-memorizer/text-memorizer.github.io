@@ -1,4 +1,4 @@
-function renderImportScreen(db) {
+async function renderImportScreen(db) {
   const screen = document.getElementById("screen-import");
   screen.innerHTML = "";
 
@@ -14,6 +14,8 @@ function renderImportScreen(db) {
   const cardsSection = el("div", { className: "import-section" },
     el("h2", {}, "Import Cards or Deck"),
     el("p", { className: "import-hint" }, "Supports .md, .txt, and .json files"),
+    el("p", { className: "import-hint import-hint--small" },
+      "Markdown imports start as new cards. To preserve mastery and progress, export and re-import via JSON snapshot."),
     el("button", { className: "btn btn--primary btn--lg", onClick: () => pickCardFile(db) }, "Choose File")
   );
 
@@ -27,7 +29,64 @@ function renderImportScreen(db) {
 
   body.appendChild(cardsSection);
   body.appendChild(snapshotSection);
+
+  // Sync folder snapshots (Chromium only). Listing is async — append a
+  // placeholder section then fill it in.
+  if (folderSyncSupported() && await syncFolderAvailable(db)) {
+    const folderSection = el("div", { className: "import-section" },
+      el("h2", {}, "From Sync Folder"),
+      el("p", { className: "import-hint folder-snapshot-loading" }, "Scanning sync folder…")
+    );
+    body.appendChild(folderSection);
+
+    listSnapshotsInFolder(db).then(snapshots => {
+      const loading = folderSection.querySelector(".folder-snapshot-loading");
+      if (loading) loading.remove();
+
+      folderSection.appendChild(el("p", { className: "import-hint import-hint--small" },
+        "Snapshots in the connected folder, newest first."));
+
+      if (!snapshots.length) {
+        folderSection.appendChild(el("p", { className: "empty-state" },
+          "No .json files found in the sync folder yet."));
+        return;
+      }
+
+      const list = el("div", { className: "folder-snapshot-list" });
+      for (const snap of snapshots) {
+        const row = el("div", { className: "folder-snapshot-row" });
+        row.appendChild(el("div", {},
+          el("div", {}, snap.name),
+          snap.modifiedAt
+            ? el("div", { className: "folder-snapshot-meta" }, formatDate(snap.modifiedAt))
+            : null
+        ));
+        row.appendChild(el("button", { className: "btn btn--sm",
+          onClick: () => restoreFromFolderSnapshot(db, snap.name) }, "Restore"));
+        list.appendChild(row);
+      }
+      folderSection.appendChild(list);
+    }).catch(err => {
+      const loading = folderSection.querySelector(".folder-snapshot-loading");
+      if (loading) loading.remove();
+      folderSection.appendChild(el("p", { className: "empty-state" },
+        `Could not list folder: ${err.message}`));
+    });
+  }
+
   screen.appendChild(body);
+}
+
+async function restoreFromFolderSnapshot(db, name) {
+  try {
+    const text = await readSnapshotFromFolder(db, name);
+    const snapshot = parseSnapshot(text);
+    await validateSnapshot(snapshot);
+    const preview = previewSnapshot(snapshot);
+    showSnapshotPreview(db, snapshot, preview, name);
+  } catch (err) {
+    showModal({ title: "Could not load snapshot", body: err.message, actions: [{ label: "OK", action: () => {} }] });
+  }
 }
 
 function pickCardFile(db) {

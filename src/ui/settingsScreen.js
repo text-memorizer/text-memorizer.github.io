@@ -42,6 +42,11 @@ async function renderSettingsScreen(db) {
 
   form.appendChild(el("button", { className: "btn btn--primary btn--lg", onClick: () => saveSettings(db, settings) }, "Save Settings"));
 
+  // About / changelog section
+  form.appendChild(el("hr", { style: "margin:1.5rem 0;border:none;border-top:1px solid var(--color-border, #e2e8f0)" }));
+  form.appendChild(el("h3", { style: "margin-bottom:0.75rem;font-size:1rem" }, `About — v${APP_VERSION}`));
+  form.appendChild(el("button", { className: "btn", onClick: () => showChangelogModal() }, "View changelog"));
+
   // Encryption section
   form.appendChild(el("hr", { style: "margin:1.5rem 0;border:none;border-top:1px solid var(--color-border, #e2e8f0)" }));
   form.appendChild(el("h3", { style: "margin-bottom:0.75rem;font-size:1rem" }, "Encryption"));
@@ -92,7 +97,7 @@ function applyTheme(theme) {
 async function _encryptAllCards(db) {
   const cards = (await repo.getAllCards(db)).filter(c => !c.deletedAt);
   for (const card of cards) {
-    if (!card.standardCard?.encrypted && !card.textMemoryCard?.encrypted) {
+    if (!card.standardCard?.encrypted && !card.textMemoryCard?.encrypted && !card.clozeCard?.encrypted) {
       const enc = await encryptCardData(card);
       await repo.putCard(db, { ...enc, updatedAt: now() });
     }
@@ -102,7 +107,7 @@ async function _encryptAllCards(db) {
 async function _decryptAllCards(db) {
   const cards = (await repo.getAllCards(db)).filter(c => !c.deletedAt);
   for (const card of cards) {
-    if (card.standardCard?.encrypted || card.textMemoryCard?.encrypted) {
+    if (card.standardCard?.encrypted || card.textMemoryCard?.encrypted || card.clozeCard?.encrypted) {
       const dec = await decryptCardData(card);
       if (dec) await repo.putCard(db, { ...dec, updatedAt: now() });
     }

@@ -361,6 +361,57 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); colo
 .stats-bar { fill: var(--primary); }
 .stats-bar:hover { fill: var(--primary-hover); }
 
+.stats-filter-bar { margin-bottom: 1rem; }
+.stats-segmented {
+  display: inline-flex; gap: 0; border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; background: var(--bg-card);
+}
+.stats-segmented-btn {
+  padding: .4rem .8rem; border: none; background: transparent;
+  color: var(--text); font-size: .875rem; cursor: pointer;
+  border-right: 1px solid var(--border);
+}
+.stats-segmented-btn:last-child { border-right: none; }
+.stats-segmented-btn:hover { background: var(--bg-hover, rgba(0,0,0,.04)); }
+.stats-segmented-btn--active {
+  background: var(--primary); color: white;
+}
+.stats-segmented-btn--active:hover { background: var(--primary-hover); }
+
+/* ── Changelog ── */
+.changelog-body { max-height: 60vh; overflow-y: auto; }
+.changelog-entry { margin-bottom: 1.25rem; }
+.changelog-entry:last-child { margin-bottom: 0; }
+.changelog-version {
+  display: flex; align-items: baseline; gap: .5rem;
+  margin-bottom: .25rem; font-size: 1rem;
+}
+.changelog-date { color: var(--text-muted); font-size: .85rem; }
+.changelog-list {
+  margin: 0; padding-left: 1.25rem; line-height: 1.5; font-size: .9rem;
+}
+.changelog-list li { margin: .15rem 0; }
+
+/* ── Import hint extras ── */
+.import-hint--small {
+  font-size: .8rem; color: var(--text-muted); margin-top: -.25rem;
+}
+
+/* ── Folder sync ── */
+.btn-row { display: flex; gap: .5rem; flex-wrap: wrap; }
+.sync-meta-status { font-style: italic; }
+.folder-snapshot-list {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-card); padding: .5rem; max-height: 220px; overflow-y: auto;
+}
+.folder-snapshot-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .35rem .25rem; border-bottom: 1px solid var(--border);
+  gap: .5rem; font-size: .875rem;
+}
+.folder-snapshot-row:last-child { border-bottom: none; }
+.folder-snapshot-meta { color: var(--text-muted); font-size: .8rem; }
+
 /* ── Mobile adjustments ── */
 @media (max-width: 600px) {
   .screen { padding: .75rem; }
