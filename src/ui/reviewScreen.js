@@ -211,9 +211,10 @@ function renderTextMemoryReviewUI(db, screen, card) {
       phase: state.phase,
       customizing: state.customizing,
       peekAll: state.peekAll,
+      brush: state.brush,
       onWordClick: (idx) => {
         if (state.phase === "blinding" && state.customizing) {
-          state = textMemoryReview.cycleWord(state, idx);
+          state = textMemoryReview.paintWord(state, idx);
         } else if (state.phase === "recall") {
           state = textMemoryReview.clickWord(state, idx);
         }
@@ -251,7 +252,7 @@ function renderTextMemoryReviewUI(db, screen, card) {
       blindActions.appendChild(btnRow);
 
       if (state.customizing) {
-        blindActions.appendChild(el("p", { className: "review-hint review-hint--small" }, "Click words to cycle: full → letter → blank"));
+        blindActions.appendChild(renderCustomizeToolbar(state, (next) => { state = next; render(); }));
       }
 
       controls.appendChild(blindActions);
@@ -269,9 +270,55 @@ function renderTextMemoryReviewUI(db, screen, card) {
       e: () => { if (state.phase === "blinding") { state = textMemoryReview.makeEasier(state); render(); } },
       h: () => { if (state.phase === "blinding") { state = textMemoryReview.makeHarder(state); render(); } },
       c: () => { if (state.phase === "blinding") { state = textMemoryReview.startCustomizing(state); render(); } },
-      p: () => { if (state.phase === "recall") { state = textMemoryReview.togglePeekAll(state); render(); } }
+      p: () => { if (state.phase === "recall") { state = textMemoryReview.togglePeekAll(state); render(); } },
+      f: () => { if (state.phase === "blinding" && state.customizing) { state = textMemoryReview.setBrush(state, "full"); render(); } },
+      l: () => { if (state.phase === "blinding" && state.customizing) { state = textMemoryReview.setBrush(state, "letter"); render(); } },
+      b: () => { if (state.phase === "blinding" && state.customizing) { state = textMemoryReview.setBrush(state, "blind"); render(); } }
     }
   );
+}
+
+function renderCustomizeToolbar(state, onChange) {
+  const wrap = el("div", { className: "customize-toolbar" });
+
+  const brushLabels = { full: "Full", letter: "Letter", blind: "Hidden" };
+  const brushKeys = { full: "F", letter: "L", blind: "B" };
+  const brushModes = ["full", "letter", "blind"];
+
+  // Paint row
+  const paintRow = el("div", { className: "customize-row" },
+    el("span", { className: "customize-row__label" }, "Paint:")
+  );
+  for (const mode of brushModes) {
+    const chip = el("button", {
+      type: "button",
+      className: `brush-chip brush-${mode}${state.brush === mode ? " is-active" : ""}`,
+      "aria-pressed": state.brush === mode ? "true" : "false",
+      onClick: () => onChange(textMemoryReview.setBrush(state, mode))
+    }, `${brushLabels[mode]} (${brushKeys[mode]})`);
+    paintRow.appendChild(chip);
+  }
+  wrap.appendChild(paintRow);
+
+  // Set-all row
+  const bulkRow = el("div", { className: "customize-row" },
+    el("span", { className: "customize-row__label" }, "Set all →")
+  );
+  for (const mode of brushModes) {
+    const btn = el("button", {
+      type: "button",
+      className: `bulk-btn bulk-${mode}`,
+      onClick: () => onChange(textMemoryReview.setAllTo(state, mode))
+    }, brushLabels[mode]);
+    bulkRow.appendChild(btn);
+  }
+  wrap.appendChild(bulkRow);
+
+  // Hint
+  wrap.appendChild(el("p", { className: "review-hint review-hint--small customize-hint" },
+    `Tap words to paint them as ${brushLabels[state.brush] || "—"}.`));
+
+  return wrap;
 }
 
 async function commitBlinding(db, card, state) {
@@ -331,6 +378,9 @@ function setupTextMemoryKeyboard(onReveal, onRate, blindingKeys = {}) {
     if (e.key === "h" || e.key === "H") blindingKeys.h && blindingKeys.h();
     if (e.key === "c" || e.key === "C") blindingKeys.c && blindingKeys.c();
     if (e.key === "p" || e.key === "P") blindingKeys.p && blindingKeys.p();
+    if (e.key === "f" || e.key === "F") blindingKeys.f && blindingKeys.f();
+    if (e.key === "l" || e.key === "L") blindingKeys.l && blindingKeys.l();
+    if (e.key === "b" || e.key === "B") blindingKeys.b && blindingKeys.b();
   };
   document.addEventListener("keydown", _keyHandler);
 }

@@ -12,8 +12,32 @@ const textMemoryReview = {
       rating: null,
       suggestedTokens: null,
       customizing: false,
-      peekAll: false
+      peekAll: false,
+      brush: "letter"
     };
+  },
+
+  setBrush(state, brush) {
+    return { ...state, brush };
+  },
+
+  paintWord(state, wordIndex) {
+    if (!state.brush) return this.cycleWord(state, wordIndex);
+    const tokens = state.suggestedTokens.map(t => {
+      if (t.type !== "word" || t.index !== wordIndex) return t;
+      if (t.visibleMode === "locked") return t;
+      return { ...t, visibleMode: state.brush };
+    });
+    return { ...state, suggestedTokens: tokens };
+  },
+
+  setAllTo(state, target) {
+    const tokens = state.suggestedTokens.map(t => {
+      if (t.type !== "word") return t;
+      if (t.visibleMode === "locked") return t;
+      return { ...t, visibleMode: target };
+    });
+    return { ...state, suggestedTokens: tokens };
   },
 
   togglePeekAll(state) {

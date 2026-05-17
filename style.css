@@ -265,6 +265,35 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); colo
 
 .token-punct { color: var(--text); }
 
+/* ── Customize toolbar (text-memory blinding) ── */
+.customize-toolbar {
+  display: flex; flex-direction: column; gap: .5rem;
+  margin-top: .75rem; padding: .65rem .75rem;
+  background: var(--bg-secondary); border-radius: var(--radius);
+}
+.customize-row { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.customize-row__label {
+  font-size: .85rem; color: var(--text-muted);
+  min-width: 4.5rem; flex: 0 0 auto;
+}
+.brush-chip, .bulk-btn {
+  flex: 1 1 auto; min-width: 72px; min-height: 40px;
+  padding: .5rem .75rem; border-radius: var(--radius);
+  font-size: .9rem; font-weight: 500;
+  border: 1px solid var(--border); background: var(--bg-card); color: var(--text);
+  cursor: pointer; transition: background .1s, border-color .1s;
+}
+.brush-chip:hover, .bulk-btn:hover { background: var(--bg-secondary); }
+.brush-chip.is-active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.brush-chip.is-active.brush-blind { background: #64748b; border-color: #64748b; }
+.brush-chip.is-active.brush-full  { background: var(--success); border-color: var(--success); }
+.customize-hint { margin-top: .25rem; margin-bottom: 0; }
+
+/* Brush-aware hover tints on customizable words */
+.text-memory-body.brush-full .token-word.mode-customizable:hover { background: rgba(22,163,74,.18); }
+.text-memory-body.brush-letter .token-word.mode-customizable:hover { background: rgba(37,99,235,.18); }
+.text-memory-body.brush-blind .token-word.mode-customizable:hover { background: rgba(100,116,139,.25); }
+
 /* ── Markdown body ── */
 .markdown-body h1, .markdown-body h2, .markdown-body h3 { margin-top: .75rem; margin-bottom: .4rem; }
 .markdown-body p { margin-bottom: .75rem; }
@@ -570,6 +599,18 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); colo
   .card-row { gap: .4rem; }
   .card-row-type { display: none; }
   .blinding-btn-row .btn { font-size: .8rem; }
+
+  /* Bigger tap targets when painting words in customize mode */
+  .token-word.mode-customizable {
+    padding: .25rem .35rem;
+    margin: .05rem;
+    min-width: 1.5rem;
+    text-align: center;
+  }
+  .text-memory-body { line-height: 2.4; }
+
+  .customize-row__label { min-width: 100%; }
+  .brush-chip, .bulk-btn { font-size: .85rem; min-height: 44px; }
 }
 
 @media (max-width: 640px) {

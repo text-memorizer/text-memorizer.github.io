@@ -1,7 +1,8 @@
 function renderTokens(tokens, opts = {}) {
-  const { tempRevealed = new Set(), phase = "recall", customizing = false, peekAll = false, onWordClick } = opts;
+  const { tempRevealed = new Set(), phase = "recall", customizing = false, peekAll = false, onWordClick, brush } = opts;
   const container = document.createElement("div");
   container.className = "text-memory-body";
+  if (customizing && brush) container.classList.add(`brush-${brush}`);
 
   for (const token of tokens) {
     if (token.type === "linebreak") {

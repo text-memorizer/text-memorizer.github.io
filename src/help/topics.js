@@ -104,7 +104,9 @@ Paste a passage you want to memorize word-for-word — a poem, a definition, a s
 - **Blind** — words hidden entirely.
 
 The app picks a default mode based on each word's mastery. Before rating, you can adjust:
-- **K** keep • **E** easier • **H** harder • **C** cycle blinding mode
+- **K** keep • **E** easier • **H** harder • **C** customize
+
+In customize mode, pick a target state with **F** (Full), **L** (Letter), or **B** (Blind), then tap words to paint them. Use **Set all → Full / Letter / Hidden** to bulk-overwrite every word at once.
 
 The app tracks mastery **per word**, so the words you stumble on are blinded more aggressively next time. See [Adaptive blinding](#topic-adaptive-blinding-deep) for the full mechanics.
 `.trim()
@@ -252,7 +254,8 @@ See [How spaced repetition works](#topic-sr-algorithm) for the exact mechanics.
 | **K** | Keep current blinding — between reveal and rating |
 | **E** | Make easier — between reveal and rating |
 | **H** | Make harder — between reveal and rating |
-| **C** | Cycle blinding mode — between reveal and rating |
+| **C** | Customize — between reveal and rating |
+| **F / L / B** | Set paint brush to Full / Letter / Blind — while customizing |
 `.trim()
   },
   {
@@ -267,7 +270,7 @@ For *Text memorization* cards, the app tracks mastery **per word**. The next tim
 - Well-mastered words get **lighter hints** (or stay visible).
 - Words you missed get **stronger blinding** (full hide, letter-only hints).
 
-The K / E / H / C controls let you override the suggestion *before* you rate the card. The rating updates per-word stats — words you stumbled over during recall get a mastery hit.
+The K / E / H / C controls let you override the suggestion *before* you rate the card. C opens **customize mode**: pick a target state (F / L / B) and tap words to paint them, or use **Set all** to bulk-shift every word. The rating updates per-word stats — words you stumbled over during recall get a mastery hit.
 
 For the full algorithm see [Adaptive blinding internals](#topic-adaptive-blinding-deep).
 `.trim()
@@ -561,7 +564,7 @@ For text-memory cards the passage is tokenized into words + separators. Each **w
 - High mastery → visible or first-letter hint.
 - Low mastery → fully blinded.
 
-You can override the choice (**K** keep, **E** easier, **H** harder, **C** cycle) before rating.
+You can override the choice (**K** keep, **E** easier, **H** harder, **C** customize) before rating. Customize lets you paint individual words with a chosen state or bulk-set all words.
 
 **On rating**, per-word mastery shifts based on which words were revealed/missed and the overall rating. Whole-card mastery is the **average across all word tokens**.
 
@@ -682,7 +685,8 @@ If you want extra at-rest protection, enable [encryption](#topic-encryption).
 | K | Keep current blinding | Between reveal and rating |
 | E | Easier | Between reveal and rating |
 | H | Harder | Between reveal and rating |
-| C | Cycle blinding mode | Between reveal and rating |
+| C | Customize | Between reveal and rating |
+| F / L / B | Brush: Full / Letter / Blind | While customizing |
 
 **Modals**
 
