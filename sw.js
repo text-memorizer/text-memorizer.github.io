@@ -1,4 +1,4 @@
-const CACHE_NAME = "flash-v6";
+const CACHE_NAME = "flash-v7";
 
 const FILES_TO_CACHE = [
   ".",
@@ -59,6 +59,7 @@ const FILES_TO_CACHE = [
   "src/ui/statsScreen.js",
   "src/ui/changelogModal.js",
   "src/ui/installHint.js",
+  "src/ui/swUpdate.js",
   "src/help/topics.js",
   "src/ui/helpScreen.js",
   "src/ui/helpButton.js",
@@ -68,10 +69,12 @@ const FILES_TO_CACHE = [
 ];
 
 self.addEventListener("install", event => {
+  // Don't skipWaiting unconditionally — wait until the user opts in via the
+  // update banner (which posts {type:"SKIP_WAITING"}). This avoids swapping
+  // code under a running session.
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", event => {
@@ -81,6 +84,12 @@ self.addEventListener("activate", event => {
     )
   );
   self.clients.claim();
+});
+
+self.addEventListener("message", event => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("fetch", event => {

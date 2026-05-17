@@ -125,6 +125,7 @@
 <script src="src/ui/statsScreen.js"></script>
 <script src="src/ui/changelogModal.js"></script>
 <script src="src/ui/installHint.js"></script>
+<script src="src/ui/swUpdate.js"></script>
 
 <!-- Help -->
 <script src="src/help/topics.js"></script>
@@ -135,9 +136,7 @@
 <script src="src/app.js"></script>
 
 <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch(console.error);
-  }
+  registerSW();
 </script>
 
 </body>
